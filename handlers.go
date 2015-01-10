@@ -3,10 +3,11 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/gorilla/mux"
 	"io"
 	"io/ioutil"
 	"net/http"
+
+	"github.com/gorilla/mux"
 
 	g "github.com/gabesullice/foos/game"
 	u "github.com/gabesullice/foos/user"
@@ -51,7 +52,21 @@ func UserUpdate(w http.ResponseWriter, r *http.Request) {
 }
 
 func UserDelete(w http.ResponseWriter, r *http.Request) {
-	respond(w, "")
+	vars := mux.Vars(r)
+	user, err := u.GetUser(vars["name"], storage.GetSession())
+
+	if err != nil {
+		ServeError(w, ServeErrors["userNotFound"])
+		panic(err)
+	}
+
+	err = user.Delete(storage.GetSession())
+	if err != nil {
+		ServeError(w, ServeErrors["badDbOp"])
+		panic(err)
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func GamesList(w http.ResponseWriter, r *http.Request) {
@@ -93,7 +108,21 @@ func GameUpdate(w http.ResponseWriter, r *http.Request) {
 }
 
 func GameDelete(w http.ResponseWriter, r *http.Request) {
-	respond(w, "")
+	vars := mux.Vars(r)
+	game, err := g.GetGame(vars["id"], storage.GetSession())
+
+	if err != nil {
+		ServeError(w, ServeErrors["gameNotFound"])
+		panic(err)
+	}
+
+	err = game.Delete(storage.GetSession())
+	if err != nil {
+		ServeError(w, ServeErrors["badDbOp"])
+		panic(err)
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func readBody(w http.ResponseWriter, r *http.Request) []byte {
@@ -143,10 +172,34 @@ func usersCreate(w http.ResponseWriter, users []u.User) []u.User {
 	return users
 }
 
+func usersDelete(w http.ResponseWriter, users []u.User) []u.User {
+	for _, user := range users {
+		s := storage.GetSession()
+		err := user.Delete(s)
+		if err != nil {
+			ServeError(w, ServeErrors["badDbOp"])
+			panic(err)
+		}
+	}
+	return users
+}
+
 func gamesCreate(w http.ResponseWriter, games []g.Game) []g.Game {
 	for _, game := range games {
 		s := storage.GetSession()
 		err := game.Save(s)
+		if err != nil {
+			ServeError(w, ServeErrors["badDbOp"])
+			panic(err)
+		}
+	}
+	return games
+}
+
+func gamesDelete(w http.ResponseWriter, games []g.Game) []g.Game {
+	for _, game := range games {
+		s := storage.GetSession()
+		err := game.Delete(s)
 		if err != nil {
 			ServeError(w, ServeErrors["badDbOp"])
 			panic(err)

@@ -65,6 +65,19 @@ func (u *User) Save(s store.Session) error {
 	return nil
 }
 
+func (u *User) Delete(s store.Session) error {
+	if u.Id == "" {
+		return fmt.Errorf("The user could not be deleted without an id.")
+	}
+
+	_, err := r.Db("foos").Table("users").Get(u.Id).Delete().Run(s)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (u User) Check(s store.Session) error {
 	res, err := r.Db("foos").Table("users").Field("mail").Count(u.Mail).Run(s)
 

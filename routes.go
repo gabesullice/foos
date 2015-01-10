@@ -22,7 +22,7 @@ var routes = Routes{
 
 	Route{"/games", "GET", "GameList", GamesList},
 	Route{"/games", "POST", "GameCreate", GamesCreate},
-	Route{"/games/{name}", "GET", "GameDetail", GameDetail},
-	Route{"/games/{name}", "PATCH", "GameUpdate", GameUpdate},
-	Route{"/games/{name}", "DELETE", "GameDelete", GameDelete},
+	Route{"/games/{id}", "GET", "GameDetail", GameDetail},
+	Route{"/games/{id}", "PATCH", "GameUpdate", GameUpdate},
+	Route{"/games/{id}", "DELETE", "GameDelete", GameDelete},
 }

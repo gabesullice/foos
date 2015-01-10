@@ -1,6 +1,8 @@
 package game
 
 import (
+	"fmt"
+
 	r "github.com/dancannon/gorethink"
 	store "github.com/gabesullice/foos/storage"
 )
@@ -74,6 +76,19 @@ func (g *Game) Save(s store.Session) error {
 			return err
 		}
 	}
+	return nil
+}
+
+func (g *Game) Delete(s store.Session) error {
+	if g.Id == "" {
+		return fmt.Errorf("The game could not be deleted without an id.")
+	}
+
+	_, err := r.Db("foos").Table("games").Get(g.Id).Delete().Run(s)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
