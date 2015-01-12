@@ -18,10 +18,10 @@ type User struct {
 	Updated int64 `gorethink:"updated" json:"updated"`
 }
 
-func GetUser(name string, s store.Session) (User, error) {
+func GetUser(mail string, s store.Session) (User, error) {
 	var user User
 
-	res, err := r.Db("foos").Table("users").GetAllByIndex("name", name).Run(s)
+	res, err := r.Db("foos").Table("users").GetAllByIndex("mail", mail).Run(s)
 
 	if err != nil {
 		return user, err

@@ -22,21 +22,21 @@ func UsersList(w http.ResponseWriter, r *http.Request) {
 	}
 
 	response := marshal(w, users)
-	respond(w, string(response))
+	respond(w, string(response), http.StatusOK)
 }
 
 func UsersCreate(w http.ResponseWriter, r *http.Request) {
 	body := readBody(w, r)
-	var users []u.User
+	var users []*u.User
 	unmarshal(w, body, &users)
-	users = usersCreate(w, users)
+	usersCreate(w, &users)
 	response := marshal(w, users)
-	respond(w, string(response))
+	respond(w, string(response), http.StatusCreated)
 }
 
 func UserDetail(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	user, err := u.GetUser(vars["name"], storage.GetSession())
+	user, err := u.GetUser(vars["mail"], storage.GetSession())
 
 	if err != nil {
 		ServeError(w, ServeErrors["userNotFound"])
@@ -44,16 +44,30 @@ func UserDetail(w http.ResponseWriter, r *http.Request) {
 	}
 
 	response := marshal(w, user)
-	respond(w, string(response))
+	respond(w, string(response), http.StatusOK)
 }
 
 func UserUpdate(w http.ResponseWriter, r *http.Request) {
-	respond(w, "")
+	vars := mux.Vars(r)
+	user, err := u.GetUser(vars["mail"], storage.GetSession())
+
+	if err != nil {
+		ServeError(w, ServeErrors["userNotFound"])
+		panic(err)
+	}
+
+	body := readBody(w, r)
+	unmarshal(w, body, &user)
+
+	user.Save(storage.GetSession())
+
+	response := marshal(w, user)
+	respond(w, string(response), http.StatusAccepted)
 }
 
 func UserDelete(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	user, err := u.GetUser(vars["name"], storage.GetSession())
+	user, err := u.GetUser(vars["mail"], storage.GetSession())
 
 	if err != nil {
 		ServeError(w, ServeErrors["userNotFound"])
@@ -78,21 +92,21 @@ func GamesList(w http.ResponseWriter, r *http.Request) {
 	}
 
 	response := marshal(w, games)
-	respond(w, string(response))
+	respond(w, string(response), http.StatusOK)
 }
 
 func GamesCreate(w http.ResponseWriter, r *http.Request) {
 	body := readBody(w, r)
-	var games []g.Game
+	var games []*g.Game
 	unmarshal(w, body, &games)
-	games = gamesCreate(w, games)
+	gamesCreate(w, &games)
 	response := marshal(w, games)
-	respond(w, string(response))
+	respond(w, string(response), http.StatusOK)
 }
 
 func GameDetail(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	game, err := g.GetGame(vars["name"], storage.GetSession())
+	game, err := g.GetGame(vars["id"], storage.GetSession())
 
 	if err != nil {
 		ServeError(w, ServeErrors["gameNotFound"])
@@ -100,11 +114,25 @@ func GameDetail(w http.ResponseWriter, r *http.Request) {
 	}
 
 	response := marshal(w, game)
-	respond(w, string(response))
+	respond(w, string(response), http.StatusOK)
 }
 
 func GameUpdate(w http.ResponseWriter, r *http.Request) {
-	respond(w, "")
+	vars := mux.Vars(r)
+	game, err := g.GetGame(vars["id"], storage.GetSession())
+
+	if err != nil {
+		ServeError(w, ServeErrors["gameNotFound"])
+		panic(err)
+	}
+
+	body := readBody(w, r)
+	unmarshal(w, body, &game)
+
+	game.Save(storage.GetSession())
+
+	response := marshal(w, game)
+	respond(w, string(response), http.StatusAccepted)
 }
 
 func GameDelete(w http.ResponseWriter, r *http.Request) {
@@ -134,8 +162,9 @@ func readBody(w http.ResponseWriter, r *http.Request) []byte {
 	return body
 }
 
-func respond(w http.ResponseWriter, response string) {
+func respond(w http.ResponseWriter, response string, status int) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	w.WriteHeader(status)
 	fmt.Fprintf(w, response)
 }
 
@@ -156,8 +185,8 @@ func unmarshal(w http.ResponseWriter, data []byte, v interface{}) {
 	}
 }
 
-func usersCreate(w http.ResponseWriter, users []u.User) []u.User {
-	for _, user := range users {
+func usersCreate(w http.ResponseWriter, users *[]*u.User) {
+	for _, user := range *users {
 		s := storage.GetSession()
 		if err := user.Check(s); err != nil {
 			ServeError(w, ServeErrors["badUser"])
@@ -169,7 +198,7 @@ func usersCreate(w http.ResponseWriter, users []u.User) []u.User {
 			panic(err)
 		}
 	}
-	return users
+	return
 }
 
 func usersDelete(w http.ResponseWriter, users []u.User) []u.User {
@@ -184,8 +213,8 @@ func usersDelete(w http.ResponseWriter, users []u.User) []u.User {
 	return users
 }
 
-func gamesCreate(w http.ResponseWriter, games []g.Game) []g.Game {
-	for _, game := range games {
+func gamesCreate(w http.ResponseWriter, games *[]*g.Game) {
+	for _, game := range *games {
 		s := storage.GetSession()
 		err := game.Save(s)
 		if err != nil {
@@ -193,7 +222,7 @@ func gamesCreate(w http.ResponseWriter, games []g.Game) []g.Game {
 			panic(err)
 		}
 	}
-	return games
+	return
 }
 
 func gamesDelete(w http.ResponseWriter, games []g.Game) []g.Game {
